@@ -2,19 +2,19 @@
 
 ## 项目介绍
 
-这是个一键搬运 formula 的自动化工具，可以很方便地将 formula 从上游 [Homebrew/homebrew-core](https://github.com/homebrew/homebrew-core) 仓库搬运到下游 [Harmonybrew/homebrew-core](https://gitcode.com/Harmonybrew/homebrew-core) 仓库中。
+这是个一键搬运 formula 的自动化工具，可以很方便地将 formula 从上游 [Homebrew/homebrew-core](https://github.com/homebrew/homebrew-core) 仓库搬运到下游 [Harmonybrew/homebrew-core](https://atomgit.com/Harmonybrew/homebrew-core) 仓库中。
 
 ## 前置要求
 
-请学习 [如何贡献 formula](https://gitcode.com/Harmonybrew/docs/blob/main/zh-CN/contributor/contribute-formula.md)，并至少手动完成一次 formula 贡献。此自动化工具仅供熟练用户使用，未掌握手动贡献流程者请勿使用。
+请学习 [如何贡献 formula](https://atomgit.com/Harmonybrew/docs/blob/main/zh-CN/contributor/contribute-formula.md)，并至少手动完成一次 formula 贡献。此自动化工具仅供熟练用户使用，未掌握手动贡献流程者请勿使用。
 
 ## 使用方法
 
 **1\. 前置准备**
 
 需要在 GitCode 平台上做这两件事
-* Fork 这个仓库：[Harmonybrew/homebrew-core](https://gitcode.com/Harmonybrew/homebrew-core)。
-* 去 [访问令牌](https://gitcode.com/setting/token-classic) 界面生成一个访问令牌（token），权限范围需要包含 PR 的读写权限。
+* Fork 这个仓库：[Harmonybrew/homebrew-core](https://atomgit.com/Harmonybrew/homebrew-core)。
+* 去 [访问令牌](https://atomgit.com/setting/token-classic) 界面生成一个访问令牌（token），权限范围需要包含 PR 的读写权限。
 
 <br>
 
@@ -33,7 +33,7 @@ docker pull swr.cn-north-4.myhuaweicloud.com/harmonybrew/ci-runner:latest
 在 ci-runner 容器中执行 `check-migration.py` 脚本
 
 ```sh
-git clone https://gitcode.com/Harmonybrew/formula-migration-tool.git
+git clone https://atomgit.com/Harmonybrew/formula-migration-tool.git
 cd formula-migration-tool
 
 # 需要将下列参数替换成你的实际信息
@@ -56,7 +56,7 @@ docker run \
 在 ci-runner 容器中执行 `auto-migrate.py` 脚本
 
 ```sh
-git clone https://gitcode.com/Harmonybrew/formula-migration-tool.git
+git clone https://atomgit.com/Harmonybrew/formula-migration-tool.git
 cd formula-migration-tool
 
 # 需要将下列参数替换成你的实际信息
@@ -77,5 +77,5 @@ docker run \
 ```
 
 等待脚本运行结束或报错退出
-* 如果脚本没有报错，你可以在日志中看到有 PR 链接打印出来，在 [Harmonybrew/homebrew-core](https://gitcode.com/Harmonybrew/homebrew-core) 仓库中也能看到自动生成的 PR，等待维护者评审即可。
+* 如果脚本没有报错，你可以在日志中看到有 PR 链接打印出来，在 [Harmonybrew/homebrew-core](https://atomgit.com/Harmonybrew/homebrew-core) 仓库中也能看到自动生成的 PR，等待维护者评审即可。
 * 如果脚本报错了，这意味着这个包需要人工处理（改 formula 或者打补丁），本工具无法处理。
