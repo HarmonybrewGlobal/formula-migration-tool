@@ -5,16 +5,16 @@ import json
 import subprocess
 import requests
 
-env_vars = ["GITCODE_USER", "GITCODE_EMAIL", "GITCODE_TOKEN"]
+env_vars = ["ATOMGIT_USER", "ATOMGIT_EMAIL", "ATOMGIT_TOKEN"]
 for var in env_vars:
     if not os.getenv(var):
         sys.exit(f"Error: Environment variable {var} is missing.")
 
-GITCODE_USER = os.getenv("GITCODE_USER")
-GITCODE_EMAIL = os.getenv("GITCODE_EMAIL")
-GITCODE_TOKEN = os.getenv("GITCODE_TOKEN")
+ATOMGIT_USER = os.getenv("ATOMGIT_USER")
+ATOMGIT_EMAIL = os.getenv("ATOMGIT_EMAIL")
+ATOMGIT_TOKEN = os.getenv("ATOMGIT_TOKEN")
 UPSTREAM_API = "https://formulae.brew.sh/api/formula.jws.json"
-GITCODE_REPO = f"https://{GITCODE_USER}:{GITCODE_TOKEN}@gitcode.com/{GITCODE_USER}/homebrew-core.git"
+ATOMGIT_REPO = f"https://{ATOMGIT_USER}:{ATOMGIT_TOKEN}@atomgit.com/{ATOMGIT_USER}/homebrew-core.git"
 
 def run_cmd(cmd, cwd=None):
     """运行 Shell 命令并返回输出"""
@@ -46,14 +46,14 @@ def check_pr(formula):
     owner = "Harmonybrew"
     repo = "homebrew-core"
     import http.client
-    conn = http.client.HTTPSConnection("api.gitcode.com")
+    conn = http.client.HTTPSConnection("api.atomgit.com")
     payload = ""
     headers = {"Accept": "application/json"}
     while True:
         index = 1
         per_page = 100
         url = (
-            f"/api/v5/repos/{owner}/{repo}/pulls?access_token={GITCODE_TOKEN}" +
+            f"/api/v5/repos/{owner}/{repo}/pulls?access_token={ATOMGIT_TOKEN}" +
             f"&state=open" +
             f"&base=main" +
             f"&per_page={per_page}" +
@@ -77,13 +77,13 @@ def create_pr(head_branch, title):
     repo = "homebrew-core"
 
     # 构造请求数据
-    url = f"https://api.gitcode.com/api/v5/repos/{owner}/{repo}/pulls"
-    params = {"access_token": GITCODE_TOKEN}
+    url = f"https://api.atomgit.com/api/v5/repos/{owner}/{repo}/pulls"
+    params = {"access_token": ATOMGIT_TOKEN}
     payload = {
         "title": title,
         "head": head_branch,  # 格式: "username:branch"
         "base": "main",
-        "body": "Automatically migrated by [formula-migration-tool](https://gitcode.com/Harmonybrew/formula-migration-tool).",
+        "body": "Automatically migrated by [formula-migration-tool](https://atomgit.com/Harmonybrew/formula-migration-tool).",
         "prune_source_branch": True,  # 合入后删除源分支
     }
 
@@ -91,7 +91,7 @@ def create_pr(head_branch, title):
         response = requests.post(url, params=params, json=payload, timeout=30)
         response.raise_for_status()
         print(
-            f"[SUCCESS] PR created: https://gitcode.com/Harmonybrew/homebrew-core/pull/{response.json().get('number')}"
+            f"[SUCCESS] PR created: https://atomgit.com/Harmonybrew/homebrew-core/pull/{response.json().get('number')}"
         )
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Failed to create PR: {e}")
@@ -159,11 +159,11 @@ def main():
     commit_msg = f"{formula} {version} (new formula)"
 
     # Git 操作
-    print(f"[*] Committing and pushing to GitCode...")
+    print(f"[*] Committing and pushing to AtomGit...")
     branch_name = f"migrate-{formula}"
     
-    run_cmd(["git", "config", "user.name", GITCODE_USER])
-    run_cmd(["git", "config", "user.email", GITCODE_EMAIL])
+    run_cmd(["git", "config", "user.name", ATOMGIT_USER])
+    run_cmd(["git", "config", "user.email", ATOMGIT_EMAIL])
     
     # 切换分支
     subprocess.run(["git", "checkout", "-b", branch_name]) # 允许失败（如果分支已存在）
@@ -173,13 +173,13 @@ def main():
         run_cmd(["git", "add", os.path.join("Aliases", alias)])
     
     run_cmd(["git", "commit", "-m", commit_msg])
-    run_cmd(["git", "push", "-f", GITCODE_REPO, branch_name])
+    run_cmd(["git", "push", "-f", ATOMGIT_REPO, branch_name])
 
     # 检查 PR 是否已存在
     check_pr(formula)
 
     # 生成 PR
-    create_pr(f"{GITCODE_USER}:{branch_name}", commit_msg)
+    create_pr(f"{ATOMGIT_USER}:{branch_name}", commit_msg)
 
     print(f"\n[OK] Successfully migrated {formula}!")
 
