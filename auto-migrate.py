@@ -19,7 +19,8 @@ GITCODE_REPO = f"https://{GITCODE_USER}:{GITCODE_TOKEN}@gitcode.com/{GITCODE_USE
 def run_cmd(cmd, cwd=None):
     """运行 Shell 命令并返回输出"""
     print(f"[*] Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print(result.stdout)
     if result.returncode != 0:
         print(f"[!] Error: {result.stderr}")
         sys.exit(result.returncode)
@@ -40,6 +41,36 @@ def fetch_aliases(formula_name):
     except Exception as e:
         print(f"[!] Warning: Failed to fetch aliases: {e}")
     return []
+
+def check_pr(formula):
+    owner = "Harmonybrew"
+    repo = "homebrew-core"
+    import http.client
+    conn = http.client.HTTPSConnection("api.gitcode.com")
+    payload = ""
+    headers = {"Accept": "application/json"}
+    while True:
+        index = 1
+        per_page = 100
+        url = (
+            f"/api/v5/repos/{owner}/{repo}/pulls?access_token={GITCODE_TOKEN}" +
+            f"&state=open" +
+            f"&base=main" +
+            f"&per_page={per_page}" +
+            f"&page={index}"
+        )
+        conn.request("GET", url, payload, headers)
+        response = conn.getresponse()
+        data = response.read()
+        prs = json.loads(data.decode("utf-8"))
+        pr_titles = [ pr['title'] for pr in prs ]
+        if formula in [title.split()[0] for title in pr_titles]:
+            print(f"[!] PR already opened!")
+            sys.exit(1)
+        if len(prs) != per_page:
+            break;
+        else:
+            index += 1
 
 def create_pr(head_branch, title):
     owner = "Harmonybrew"
@@ -89,6 +120,9 @@ def main():
         sys.exit(f"Error: {formula} already migrated.")
     os.makedirs(target_abs_dir, exist_ok=True)
 
+    # 检查 PR 是否已存在
+    check_pr(formula)
+
     # 下载 Formula 文件
     print(f"[*] Fetching {formula}.rb...")
     upstream_url = f"https://raw.githubusercontent.com/Homebrew/homebrew-core/main/Formula/{first_letter}/{formula}.rb"
@@ -116,8 +150,8 @@ def main():
 
     # 构建与测试
     print(f"[*] Installing and testing {formula}...")
-    run_cmd(["brew", "install", "-s", "--include-test", formula])
-    run_cmd(["brew", "test", formula])
+    run_cmd(["brew", "install", "-s", "-v", "--include-test", formula])
+    run_cmd(["brew", "test", "-v", formula])
 
     # 获取版本号用于提交信息
     info_json = json.loads(run_cmd(["brew", "info", "--json=v2", formula]))
@@ -140,6 +174,9 @@ def main():
     
     run_cmd(["git", "commit", "-m", commit_msg])
     run_cmd(["git", "push", "-f", GITCODE_REPO, branch_name])
+
+    # 检查 PR 是否已存在
+    check_pr(formula)
 
     # 生成 PR
     create_pr(f"{GITCODE_USER}:{branch_name}", commit_msg)
