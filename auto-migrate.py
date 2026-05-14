@@ -14,7 +14,7 @@ GITCODE_USER = os.getenv("GITCODE_USER")
 GITCODE_EMAIL = os.getenv("GITCODE_EMAIL")
 GITCODE_TOKEN = os.getenv("GITCODE_TOKEN")
 UPSTREAM_API = "https://formulae.brew.sh/api/formula.jws.json"
-GITCODE_REPO = f"https://{GITCODE_USER}:{GITCODE_TOKEN}@gitcode.com/{GITCODE_USER}/homebrew-core.git"
+GITCODE_REPO = f"https://{GITCODE_USER}:{GITCODE_TOKEN}@atomgit.com/{GITCODE_USER}/homebrew-core.git"
 
 def run_cmd(cmd, cwd=None):
     """运行 Shell 命令并返回输出"""
@@ -46,7 +46,7 @@ def check_pr(formula):
     owner = "Harmonybrew"
     repo = "homebrew-core"
     import http.client
-    conn = http.client.HTTPSConnection("api.gitcode.com")
+    conn = http.client.HTTPSConnection("api.atomgit.com")
     payload = ""
     headers = {"Accept": "application/json"}
     while True:
@@ -77,13 +77,13 @@ def create_pr(head_branch, title):
     repo = "homebrew-core"
 
     # 构造请求数据
-    url = f"https://api.gitcode.com/api/v5/repos/{owner}/{repo}/pulls"
+    url = f"https://api.atomgit.com/api/v5/repos/{owner}/{repo}/pulls"
     params = {"access_token": GITCODE_TOKEN}
     payload = {
         "title": title,
         "head": head_branch,  # 格式: "username:branch"
         "base": "main",
-        "body": "Automatically migrated by [formula-migration-tool](https://gitcode.com/Harmonybrew/formula-migration-tool).",
+        "body": "Automatically migrated by [formula-migration-tool](https://atomgit.com/Harmonybrew/formula-migration-tool).",
         "prune_source_branch": True,  # 合入后删除源分支
     }
 
@@ -91,7 +91,7 @@ def create_pr(head_branch, title):
         response = requests.post(url, params=params, json=payload, timeout=30)
         response.raise_for_status()
         print(
-            f"[SUCCESS] PR created: https://gitcode.com/Harmonybrew/homebrew-core/pull/{response.json().get('number')}"
+            f"[SUCCESS] PR created: https://atomgit.com/Harmonybrew/homebrew-core/pull/{response.json().get('number')}"
         )
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Failed to create PR: {e}")
@@ -159,7 +159,7 @@ def main():
     commit_msg = f"{formula} {version} (new formula)"
 
     # Git 操作
-    print(f"[*] Committing and pushing to GitCode...")
+    print(f"[*] Committing and pushing to AtomGit...")
     branch_name = f"migrate-{formula}"
     
     run_cmd(["git", "config", "user.name", GITCODE_USER])
