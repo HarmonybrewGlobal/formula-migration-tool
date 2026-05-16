@@ -49,9 +49,10 @@ def check_pr(formula):
     conn = http.client.HTTPSConnection("api.atomgit.com")
     payload = ""
     headers = {"Accept": "application/json"}
+
+    index=1
+    per_page=100
     while True:
-        index = 1
-        per_page = 100
         url = (
             f"/api/v5/repos/{owner}/{repo}/pulls?access_token={ATOMGIT_TOKEN}" +
             f"&state=open" +
@@ -67,7 +68,7 @@ def check_pr(formula):
         if formula in [title.split()[0] for title in pr_titles]:
             print(f"[!] PR already opened!")
             sys.exit(1)
-        if len(prs) != per_page:
+        if len(prs) < per_page:
             break;
         else:
             index += 1
