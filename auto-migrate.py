@@ -16,6 +16,7 @@ ATOMGIT_TOKEN = os.getenv("ATOMGIT_TOKEN")
 UPSTREAM_API = "https://formulae.brew.sh/api/formula.jws.json"
 ATOMGIT_REPO = f"https://{ATOMGIT_USER}:{ATOMGIT_TOKEN}@atomgit.com/{ATOMGIT_USER}/homebrew-core.git"
 
+
 def run_cmd(cmd, cwd=None):
     """运行 Shell 命令并返回输出"""
     print(f"[*] Running: {' '.join(cmd)}")
@@ -26,6 +27,7 @@ def run_cmd(cmd, cwd=None):
         sys.exit(result.returncode)
     return result.stdout.strip()
 
+
 def fetch_aliases(formula_name):
     """从 API 获取该 Formula 的所有别名"""
     try:
@@ -34,7 +36,7 @@ def fetch_aliases(formula_name):
         resp.raise_for_status()
         data = resp.json()
         payload = json.loads(data.get("payload", "[]"))
-        
+
         for item in payload:
             if item.get("name") == formula_name:
                 return item.get("aliases", [])
@@ -42,35 +44,39 @@ def fetch_aliases(formula_name):
         print(f"[!] Warning: Failed to fetch aliases: {e}")
     return []
 
+
 def check_pr(formula):
     owner = "Harmonybrew"
     repo = "homebrew-core"
     import http.client
+
     conn = http.client.HTTPSConnection("api.atomgit.com")
     payload = ""
     headers = {"Accept": "application/json"}
+
+    index = 1
+    per_page = 100
     while True:
-        index = 1
-        per_page = 100
         url = (
-            f"/api/v5/repos/{owner}/{repo}/pulls?access_token={ATOMGIT_TOKEN}" +
-            f"&state=open" +
-            f"&base=main" +
-            f"&per_page={per_page}" +
-            f"&page={index}"
+            f"/api/v5/repos/{owner}/{repo}/pulls?access_token={ATOMGIT_TOKEN}"
+            + f"&state=open"
+            + f"&base=main"
+            + f"&per_page={per_page}"
+            + f"&page={index}"
         )
         conn.request("GET", url, payload, headers)
         response = conn.getresponse()
         data = response.read()
         prs = json.loads(data.decode("utf-8"))
-        pr_titles = [ pr['title'] for pr in prs ]
+        pr_titles = [pr["title"] for pr in prs]
         if formula in [title.split()[0] for title in pr_titles]:
             print(f"[!] PR already opened!")
             sys.exit(1)
-        if len(prs) != per_page:
-            break;
+        if len(prs) < per_page:
+            break
         else:
             index += 1
+
 
 def create_pr(head_branch, title):
     owner = "Harmonybrew"
@@ -99,6 +105,7 @@ def create_pr(head_branch, title):
             print(f"Response: {response.text}")
         sys.exit(1)
 
+
 def main():
     if len(sys.argv) < 2:
         sys.exit("Usage: python3 migrate.py <formula>")
@@ -126,7 +133,7 @@ def main():
     # 下载 Formula 文件
     print(f"[*] Fetching {formula}.rb...")
     upstream_url = f"https://raw.githubusercontent.com/Homebrew/homebrew-core/main/Formula/{first_letter}/{formula}.rb"
-    
+
     resp = requests.get(upstream_url)
     if resp.status_code != 200:
         sys.exit(f"Error: Could not find {formula}.rb on upstream.")
@@ -155,23 +162,23 @@ def main():
 
     # 获取版本号用于提交信息
     info_json = json.loads(run_cmd(["brew", "info", "--json=v2", formula]))
-    version = info_json['formulae'][0]['versions']['stable']
+    version = info_json["formulae"][0]["versions"]["stable"]
     commit_msg = f"{formula} {version} (new formula)"
 
     # Git 操作
     print(f"[*] Committing and pushing to AtomGit...")
     branch_name = f"migrate-{formula}"
-    
+
     run_cmd(["git", "config", "user.name", ATOMGIT_USER])
     run_cmd(["git", "config", "user.email", ATOMGIT_EMAIL])
-    
+
     # 切换分支
-    subprocess.run(["git", "checkout", "-b", branch_name]) # 允许失败（如果分支已存在）
-    
+    subprocess.run(["git", "checkout", "-b", branch_name])  # 允许失败（如果分支已存在）
+
     run_cmd(["git", "add", rb_path])
     for alias in aliases:
         run_cmd(["git", "add", os.path.join("Aliases", alias)])
-    
+
     run_cmd(["git", "commit", "-m", commit_msg])
     run_cmd(["git", "push", "-f", ATOMGIT_REPO, branch_name])
 
@@ -182,6 +189,7 @@ def main():
     create_pr(f"{ATOMGIT_USER}:{branch_name}", commit_msg)
 
     print(f"\n[OK] Successfully migrated {formula}!")
+
 
 if __name__ == "__main__":
     main()
