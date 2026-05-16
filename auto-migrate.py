@@ -46,32 +46,30 @@ def fetch_aliases(formula_name):
 
 
 def check_pr(formula):
+    """检查当前 Formula 是否已经提过 Open 状态的 PR"""
     owner = "Harmonybrew"
     repo = "homebrew-core"
-    import http.client
-
-    conn = http.client.HTTPSConnection("api.atomgit.com")
-    payload = ""
-    headers = {"Accept": "application/json"}
+    url = f"https://api.atomgit.com/api/v5/repos/{owner}/{repo}/pulls"
 
     index = 1
     per_page = 100
+
     while True:
-        url = (
-            f"/api/v5/repos/{owner}/{repo}/pulls?access_token={ATOMGIT_TOKEN}"
-            + f"&state=open"
-            + f"&base=main"
-            + f"&per_page={per_page}"
-            + f"&page={index}"
-        )
-        conn.request("GET", url, payload, headers)
-        response = conn.getresponse()
-        data = response.read()
-        prs = json.loads(data.decode("utf-8"))
+        params = {"access_token": ATOMGIT_TOKEN, "state": "open", "base": "main", "per_page": per_page, "page": index}
+
+        try:
+            response = requests.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            prs = response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"[ERROR] Failed to check PR status: {e}")
+            sys.exit(1)
+
         pr_titles = [pr["title"] for pr in prs]
         if formula in [title.split()[0] for title in pr_titles]:
             print(f"[!] PR already opened!")
             sys.exit(1)
+
         if len(prs) < per_page:
             break
         else:
@@ -101,7 +99,7 @@ def create_pr(head_branch, title):
         )
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Failed to create PR: {e}")
-        if response is not None:
+        if "response" in locals() and response is not None:
             print(f"Response: {response.text}")
         sys.exit(1)
 
