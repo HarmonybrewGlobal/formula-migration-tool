@@ -5,10 +5,11 @@ UPSTREAM_API = "https://formulae.brew.sh/api/formula.jws.json"
 DOWNSTREAM_API = "https://harmonybrew.atomgit.com/api/formula.jws.json"
 
 # 全局数据
-UPSTREAM_MAP = {}    # 真实名称 -> 详细信息
-ALIAS_MAP = {}       # 别名 -> 真实名称
+UPSTREAM_MAP = {}  # 真实名称 -> 详细信息
+ALIAS_MAP = {}  # 别名 -> 真实名称
 DOWNSTREAM_NAMES = set()
 FULLY_EXPANDED = set()
+
 
 def fetch_api(url):
     try:
@@ -23,6 +24,7 @@ def fetch_api(url):
     except Exception as e:
         print(f"[!] error: {e}")
         return []
+
 
 def build_maps():
     global UPSTREAM_MAP, ALIAS_MAP, DOWNSTREAM_NAMES
@@ -40,9 +42,11 @@ def build_maps():
     downstream_data = fetch_api(DOWNSTREAM_API)
     DOWNSTREAM_NAMES = {item["name"] for item in downstream_data}
 
+
 def resolve_name(name):
     """将别名转换为真实名称，如果不是别名则返回原名"""
     return ALIAS_MAP.get(name, name)
+
 
 def get_linux_deps(formula_info):
     deps = set()
@@ -61,6 +65,7 @@ def get_linux_deps(formula_info):
 
     return sorted([d for d in deps if d])
 
+
 def analyze_deps(display_name, prefix="", is_last=True, current_path=None):
     if current_path is None:
         current_path = set()
@@ -68,7 +73,7 @@ def analyze_deps(display_name, prefix="", is_last=True, current_path=None):
     # 核心逻辑：立即解析真实名称
     real_name = resolve_name(display_name)
     connector = "└── " if is_last else "├── "
-    
+
     # 判定状态
     in_up = real_name in UPSTREAM_MAP
     if not in_up:
@@ -101,10 +106,11 @@ def analyze_deps(display_name, prefix="", is_last=True, current_path=None):
 
     formula_info = UPSTREAM_MAP[real_name]
     deps = get_linux_deps(formula_info)
-    
+
     new_prefix = prefix + ("    " if is_last else "│   ")
     for i, dep in enumerate(deps):
         analyze_deps(dep, new_prefix, i == len(deps) - 1, current_path.copy())
+
 
 def main():
     if len(sys.argv) != 2:
@@ -115,7 +121,7 @@ def main():
     if not UPSTREAM_MAP:
         print("[!] Failed to fetch upstream data.")
         return
-    
+
     target = sys.argv[1]
     real_target = resolve_name(target)
 
@@ -125,6 +131,7 @@ def main():
     else:
         analyze_deps(target)
     print("-" * 70)
+
 
 if __name__ == "__main__":
     main()
